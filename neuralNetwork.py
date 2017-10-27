@@ -18,10 +18,9 @@ print("X_test.shape=",X_test.shape," y_test.shape=",y_test.shape)
 # plot one of these
 print("X_train len:", len(X_train))
 
-class NeuralNetwork1:
-	def __init__(self, num_neu=0, num_outs=0, act_func="softmax"):
-		self.num_neu = num_neu
-		self.num_outs = num_outs
+class NeuralNetwork:
+	def __init__(self, num_neu=[0,0], act_func="softmax"):
+		self.num_neu = num_neu]
 		self.has_run = False
 		# TODO: add all the prime functions
 		if act_func is "softmax":
@@ -40,22 +39,31 @@ class NeuralNetwork1:
 		# make matrices that depend on the length of x_in
 		self.A0 = np.matrix(x_in)
 		batch_siz = len(x_in)
-		self.A1 = np.zeros((batch_siz, self.num_neu))
-		self.A2 = np.zeros((batch_siz, self.num_outs))
+		self.A1 = np.zeros((batch_siz, self.num_neu[0]))
+		self.A2 = np.zeros((batch_siz, self.num_neu[1]))
 		self.errMat = np.zeros(self.A2.shape)	
 
-		# Create weight matrices if not already created.
+		# Create weight matrices if not already created. The matrix
+		# gynmastics here make the matrices contain random values 
+		# between -1 and 1.
 		if not self.has_run:
 			self.has_run = True
 			# 0th weight matrix, vals are (-1,1)
-			self.W0 = np.random.rand(len(x_in[0]), self.num_neu)
+			self.W0 = np.random.rand(len(x_in[0]), self.num_neu[0])
 			self.W0 -= (np.ones(self.W0.shape) / 2)
 			self.W0 *= 2
+				
 		
 			# a0 * W0 is a batch_siz x num_neu matrix	
-			self.W1 = np.random.rand(self.num_neu, self.num_outs)
+			self.W1 = np.random.rand(self.num_neu[0], self.num_neu[1])
 			self.W1 -= (np.ones(self.W1.shape) / 2)
 			self.W1 *= 2
+
+			if len(self.num_neu) > 2:
+				# a0 * W0 is a batch_siz x num_neu matrix	
+				self.W2 = np.random.rand(self.num_neu[1], self.num_neu[2])
+				self.W2 -= (np.ones(self.W2.shape) / 2)
+				self.W2 *= 2
 
 		
 		
@@ -151,7 +159,6 @@ class NeuralNetwork1:
 
 	def assertValsSet(self):
 		assert(self.num_neu is not None)
-		assert(self.num_outs is not None)
 	
 	def backward(self, y_exp, yhat):
 		
@@ -170,36 +177,9 @@ class NeuralNetwork1:
 
 		scalar = 0.05
 		self.W0 = self.W0 - scalar * djdw0 / np.max(np.fabs(djdw0))
-		# max_val = np.max(self.W0)
-		# min_abs_val = np.fabs(np.min(self.W0))
-		# self.W0 /= max(max_val, min_abs_val)
-		# max_val = np.max(djdw0)
-		# min_abs_val = np.fabs(np.min(djdw0))
-		#self.W0 = self.W0 - scalar * djdw0 / max(max_val, min_abs_val)
 
 
 		self.W1 = self.W1 - scalar * djdw1 / np.max(np.fabs(djdw1))
-		# max_val = np.max(self.W1)
-		# max_val = np.max(np.fabs(self.W1))
-		# self.W1 /= max(max_val, min_abs_val)
-		# max_val = np.max(djdw1)
-		# min_abs_val = np.fabs(np.min(djdw1))
-		# self.W1 = self.W1 - scalar * djdw1 / max(max_val, min_abs_val)
-
-
-		
-	def loss(self, y, yhat):
-		diff = y - yhat
-		rows, cols = diff.shape
-		newMat = np.multiply(diff,diff)
-		addage = []
-		for m in range(rows):
-			rowSum = 0
-			for n in range(cols):
-				rowSum += newMat[m,n]
-			addage.append(rowSum)
-		# print(sum(addage) / rows)
-		return 0.5 * sum(addage) / rows
 	
 	def dispWeights(self):
 		print("W0:")
@@ -214,17 +194,22 @@ class NeuralNetwork1:
 
 
 batch_siz = 50
-num_neu = 300
+num_neu_h1 = 300
+num_neu_h2 = 10
 num_outs = 10
-nn = NeuralNetwork1(num_neu=num_neu, num_outs=num_outs, act_func="softmax")
+nn = NeuralNetwork(num_neu=[num_neu_h1, num_outs], act_func="softmax")
 
 
-# The main training loop.
+# The main loop.
 for tour in range(20):
+	######################################################
+	# This is where the testing begins. We just throw all
+	# the test data at it at once in one big matrix using
+	# the function forward().
+	######################################################
 	
-	# setup corresponding expected output.
-	#test_batch_siz = 100
-	x_test_in = X_test#[0:test_batch_siz]
+	# construct the batch
+	x_test_in = X_test
 	y = np.zeros((x_test_in.shape[0], num_outs))
 	for n in range(x_test_in.shape[0]):
 		y[n,y_test[n]] = 1
@@ -232,6 +217,9 @@ for tour in range(20):
 
 	yhat = nn.forward(x_test_in)
 
+	# Change yhat from matrix output to a list of values
+	# just like how the y_test is formatted. Put yhat 
+	# into outage list.
 	outage = []
 	rows, cols = yhat.shape
 	for r in range(rows):
@@ -243,50 +231,47 @@ for tour in range(20):
 				max_idx = c
 		outage.append(max_idx)
 
-	num_wrong = 0
+	# Compare outage to y_test, get percent accuracy
+	num_right = 0
 	for idx in range(len(outage)):
 		#print(y_test[idx], outage[idx])
-		if y_test[idx] != outage[idx]:
-			num_wrong += 1
-	acc = num_wrong / len(outage)
+		if y_test[idx] == outage[idx]:
+			num_right += 1
+	acc = num_right / len(outage)
 	
-	print(acc, "incorrect.")
+	
+	print(acc, "correct.")
+
+	# Plot how good the accuracy is for this tour
 	plt.plot(tour, acc * 100, "ro")
 
-	iter_nums = []
-	errs = []
+	##########################################################
+	# This is where the training begins. We use forward() as
+	# before, but we also use backward() to change the weights
+	# and train the neural network.
+	##########################################################
+
 	for iters in range(100): # train it for some iterations
-		# choose indices, make input.
+
+		# Get random indicies from X_train so we can have a new random batch.
+		# we call the new random batch x_in
 		idxs = [ random.randint(0, len(X_train) - 1) for i in range(batch_siz) ]
 		x_in = [ X_train[n] for n in idxs ]
 
-		# setup corresponding expected output.
+		# setup corresponding expected output from y_train and call it y
 		y = np.zeros((batch_siz, num_outs))
 		for n in range(len(idxs)):
 			y[n,y_train[idxs[n]]] = 1
 	
-
+		
 		yhat = nn.forward(x_in)
 
-		costMat = nn.cost_func(yhat, y)
-		cost = 0
-		for m in range(costMat.shape[0]):
-			cost += costMat[m,0]
-		cost /= costMat.shape[0]
-		iter_nums.append(iters)
-		errs.append(cost)
+		# Apply changes to the weights via gradient descent
 		nn.backward(y, yhat)
-
-	#print("Training iteration.")
 
 
 
 plt.show()
 
-#print(np.array(outage))	
-#print(y_test[0:test_batch_siz])
-
-
-#error = nn.loss(yhat)
 
 	
