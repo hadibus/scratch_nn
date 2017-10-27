@@ -177,16 +177,16 @@ class NeuralNetwork:
 		scalar = 0.05
 
 		# Get the changes needed for each weight matrix
-		if len(num_neu) is 2:
-			delta3 = yhat - y
+		if len(self.num_neu) is 2:
+			delta3 = yhat - y_exp
 			djdw1 = np.dot(self.A1.T, delta3)
 
 			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
 			djdw0 = np.dot(self.A0.T, delta2)
 
 
-		elif len(num_neu) is 3:
-			delta4 = yhat - y
+		elif len(self.num_neu) is 3:
+			delta4 = yhat - y_exp
 			djdw2 = np.dot(self.A2.T, delta4)
 
 			delta3 = np.multiply(np.dot(delta4, self.W2.T), self.ReLUprime(self.Z2))
@@ -194,10 +194,18 @@ class NeuralNetwork:
 
 			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
 			djdw0 = np.dot(self.A0.T, delta2)
+		
+		# print("djdw0 max")
+		# print(np.max(np.fabs(djdw0)))
+
+		# print("djdw1 max")
+		# print(np.max(np.fabs(djdw1)))
 
 		self.W0 = self.W0 - scalar * djdw0 / np.max(np.fabs(djdw0))
 		self.W1 = self.W1 - scalar * djdw1 / np.max(np.fabs(djdw1))
-		if len(num_neu) is 3:
+		if len(self.num_neu) is 3:
+			# print("djdw1 max")
+			# print(np.max(np.fabs(djdw1)))
 			self.W2 = self.W2 - scalar * djdw2 / np.max(np.fabs(djdw2))
 	
 	def dispWeights(self):
@@ -218,9 +226,11 @@ num_neu_h2 = 10
 num_outs = 10
 nn = NeuralNetwork(num_neu=[num_neu_h1, num_outs], act_func="softmax")
 
+plot_x = []
+plot_y = []
 
 # The main loop.
-for tour in range(20):
+for tour in range(10):
 	######################################################
 	# This is where the testing begins. We just throw all
 	# the test data at it at once in one big matrix using
@@ -262,7 +272,8 @@ for tour in range(20):
 	print(acc, "correct.")
 
 	# Plot how good the accuracy is for this tour
-	plt.plot(tour, acc * 100, "ro")
+	plot_x.append(tour)
+	plot_y.append(acc)
 
 	##########################################################
 	# This is where the training begins. We use forward() as
@@ -288,7 +299,11 @@ for tour in range(20):
 		nn.backward(y, yhat)
 
 
-
+plt.plot(plot_y)
+plt.title('test title', fontsize=20)
+plt.xlabel('Iteration')
+plt.ylabel('Proportion correct')
+plt.xticks(np.arange(min(plot_x), max(plot_x)+1, 1.0))
 plt.show()
 
 
