@@ -20,7 +20,7 @@ print("X_train len:", len(X_train))
 
 class NeuralNetwork:
 	def __init__(self, num_neu=[0,0], act_func="softmax"):
-		self.num_neu = num_neu]
+		self.num_neu = num_neu
 		self.has_run = False
 		# TODO: add all the prime functions
 		if act_func is "softmax":
@@ -71,10 +71,22 @@ class NeuralNetwork:
 		self.Z1 = self.A0 * self.W0
 		self.A1 = self.ReLU(self.Z1)
 
-		# From hidden layer to output
 		self.Z2 = self.A1 * self.W1
-		self.A2 = self.act_func(self.Z2) #gives yhat
-		return self.A2 #gives yhat
+
+		if len(self.num_neu) is 2:
+			# From hidden layer to output
+			self.A2 = self.act_func(self.Z2) #gives yhat
+
+			return self.A2 #gives yhat
+		else:
+			# From 1st hidden layer to 2nd hidden layer
+			self.A2 = self.ReLU(self.Z2)
+
+			# From 2nd hidden layer to output
+			self.Z3 = self.A2 * self.W2
+			self.A3 = self.act_func(self.Z3) #gives yhat
+
+			return self.A3
 		
 
 	def ReLU(self, mat):
@@ -161,25 +173,32 @@ class NeuralNetwork:
 		assert(self.num_neu is not None)
 	
 	def backward(self, y_exp, yhat):
-		
-		#delta3 = np.multiply(-(y_exp - yhat), self.deact_func(self.Z2, self.A2))
-		delta3 = yhat - y
-		# delta3 = np.multiply(yhat - y_exp
-		djdw1 = np.dot(self.A1.T, delta3)
-		# print(djdw2.shape) # Esta bien!
-	
-		# djdw0 = djdw * self.W1.T * self.ReLUprime(self.Z1)
-		delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
-		djdw0 = np.dot(self.A0.T, delta2)
-		
-		# print(djdw0.shape)
-		# print(self.W0.shape)
 
 		scalar = 0.05
+
+		# Get the changes needed for each weight matrix
+		if len(num_neu) is 2:
+			delta3 = yhat - y
+			djdw1 = np.dot(self.A1.T, delta3)
+
+			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
+			djdw0 = np.dot(self.A0.T, delta2)
+
+
+		elif len(num_neu) is 3:
+			delta4 = yhat - y
+			djdw2 = np.dot(self.A2.T, delta4)
+
+			delta3 = np.multiply(np.dot(delta4, self.W2.T), self.ReLUprime(self.Z2))
+			djdw1 = np.dot(self.A1.T, delta3)
+
+			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
+			djdw0 = np.dot(self.A0.T, delta2)
+
 		self.W0 = self.W0 - scalar * djdw0 / np.max(np.fabs(djdw0))
-
-
 		self.W1 = self.W1 - scalar * djdw1 / np.max(np.fabs(djdw1))
+		if len(num_neu) is 3:
+			self.W2 = self.W2 - scalar * djdw2 / np.max(np.fabs(djdw2))
 	
 	def dispWeights(self):
 		print("W0:")
@@ -263,7 +282,6 @@ for tour in range(20):
 		for n in range(len(idxs)):
 			y[n,y_train[idxs[n]]] = 1
 	
-		
 		yhat = nn.forward(x_in)
 
 		# Apply changes to the weights via gradient descent
