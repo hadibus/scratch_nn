@@ -22,7 +22,6 @@ class NeuralNetwork:
 	def __init__(self, num_neu=[0,0], act_func="softmax"):
 		self.num_neu = num_neu
 		self.has_run = False
-		# TODO: add all the prime functions
 		if act_func is "softmax":
 			self.act_func = self.softmax
 			self.deact_func = self.softmaxprime
@@ -52,21 +51,24 @@ class NeuralNetwork:
 			self.W0 = np.random.rand(len(x_in[0]), self.num_neu[0])
 			self.W0 -= (np.ones(self.W0.shape) / 2)
 			self.W0 *= 2
+			print("W0.shape", self.W0.shape)
 				
 		
 			# a0 * W0 is a batch_siz x num_neu matrix	
 			self.W1 = np.random.rand(self.num_neu[0], self.num_neu[1])
 			self.W1 -= (np.ones(self.W1.shape) / 2)
 			self.W1 *= 2
+			print("W1.shape", self.W1.shape)
 
 			if len(self.num_neu) > 2:
 				# a0 * W0 is a batch_siz x num_neu matrix	
 				self.W2 = np.random.rand(self.num_neu[1], self.num_neu[2])
 				self.W2 -= (np.ones(self.W2.shape) / 2)
 				self.W2 *= 2
+				print("W2.shape", self.W2.shape)
 
 		
-		
+
 		# From inpput to hidden layer
 		self.Z1 = self.A0 * self.W0
 		self.A1 = self.ReLU(self.Z1)
@@ -81,13 +83,12 @@ class NeuralNetwork:
 		else:
 			# From 1st hidden layer to 2nd hidden layer
 			self.A2 = self.ReLU(self.Z2)
-
-			# From 2nd hidden layer to output
-			self.Z3 = self.A2 * self.W2
+		
+			self.Z3 = np.dot(self.A2, self.W2)
 			self.A3 = self.act_func(self.Z3) #gives yhat
 
-			return self.A3
-		
+			assert(self.A3.shape == (batch_siz, self.num_neu[2]))
+			return self.A3		
 
 	def ReLU(self, mat):
 		newmat = mat
@@ -104,7 +105,7 @@ class NeuralNetwork:
 	
 	def softmax(self, mat):
 		rows, cols = mat.shape
-		yhat = np.zeros(self.A2.shape)
+		yhat = np.zeros(mat.shape)
 		for m in range(rows):
 			# Find the alpha
 			alpha = None
@@ -194,18 +195,11 @@ class NeuralNetwork:
 
 			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
 			djdw0 = np.dot(self.A0.T, delta2)
-		
-		# print("djdw0 max")
-		# print(np.max(np.fabs(djdw0)))
-
-		# print("djdw1 max")
-		# print(np.max(np.fabs(djdw1)))
 
 		self.W0 = self.W0 - scalar * djdw0 / np.max(np.fabs(djdw0))
 		self.W1 = self.W1 - scalar * djdw1 / np.max(np.fabs(djdw1))
+
 		if len(self.num_neu) is 3:
-			# print("djdw1 max")
-			# print(np.max(np.fabs(djdw1)))
 			self.W2 = self.W2 - scalar * djdw2 / np.max(np.fabs(djdw2))
 	
 	def dispWeights(self):
@@ -219,18 +213,16 @@ class NeuralNetwork:
 		print(self.W0.tolist())
 		
 
-
+tours = 40
 batch_siz = 50
-num_neu_h1 = 300
-num_neu_h2 = 10
-num_outs = 10
-nn = NeuralNetwork(num_neu=[num_neu_h1, num_outs], act_func="softmax")
+num_neurons = [300, 100, 10]
+nn = NeuralNetwork(num_neu=num_neurons, act_func="softmax")
 
 plot_x = []
 plot_y = []
 
 # The main loop.
-for tour in range(10):
+for tour in range(tours):
 	######################################################
 	# This is where the testing begins. We just throw all
 	# the test data at it at once in one big matrix using
@@ -239,7 +231,7 @@ for tour in range(10):
 	
 	# construct the batch
 	x_test_in = X_test
-	y = np.zeros((x_test_in.shape[0], num_outs))
+	y = np.zeros((x_test_in.shape[0], num_neurons[-1]))
 	for n in range(x_test_in.shape[0]):
 		y[n,y_test[n]] = 1
 
@@ -289,18 +281,20 @@ for tour in range(10):
 		x_in = [ X_train[n] for n in idxs ]
 
 		# setup corresponding expected output from y_train and call it y
-		y = np.zeros((batch_siz, num_outs))
+		y = np.zeros((batch_siz, num_neurons[-1]))
 		for n in range(len(idxs)):
 			y[n,y_train[idxs[n]]] = 1
 	
 		yhat = nn.forward(x_in)
+
+		assert(y.shape == yhat.shape)
 
 		# Apply changes to the weights via gradient descent
 		nn.backward(y, yhat)
 
 
 plt.plot(plot_y)
-plt.title('test title', fontsize=20)
+plt.title('MNIST training with ' + str(len(num_neurons) - 1) + ' hidden layers'  , fontsize=20)
 plt.xlabel('Iteration')
 plt.ylabel('Proportion correct')
 plt.xticks(np.arange(min(plot_x), max(plot_x)+1, 1.0))
