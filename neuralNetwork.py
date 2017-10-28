@@ -18,12 +18,10 @@ print("X_test.shape=",X_test.shape," y_test.shape=",y_test.shape)
 # plot one of these
 print("X_train len:", len(X_train))
 
-class NeuralNetwork1:
-	def __init__(self, num_neu=0, num_outs=0, act_func="softmax"):
+class NeuralNetwork:
+	def __init__(self, num_neu=[0,0], act_func="softmax"):
 		self.num_neu = num_neu
-		self.num_outs = num_outs
 		self.has_run = False
-		# TODO: add all the prime functions
 		if act_func is "softmax":
 			self.act_func = self.softmax
 			self.deact_func = self.softmaxprime
@@ -40,34 +38,57 @@ class NeuralNetwork1:
 		# make matrices that depend on the length of x_in
 		self.A0 = np.matrix(x_in)
 		batch_siz = len(x_in)
-		self.A1 = np.zeros((batch_siz, self.num_neu))
-		self.A2 = np.zeros((batch_siz, self.num_outs))
+		self.A1 = np.zeros((batch_siz, self.num_neu[0]))
+		self.A2 = np.zeros((batch_siz, self.num_neu[1]))
 		self.errMat = np.zeros(self.A2.shape)	
 
-		# Create weight matrices if not already created.
+		# Create weight matrices if not already created. The matrix
+		# gynmastics here make the matrices contain random values 
+		# between -1 and 1.
 		if not self.has_run:
 			self.has_run = True
 			# 0th weight matrix, vals are (-1,1)
-			self.W0 = np.random.rand(len(x_in[0]), self.num_neu)
+			self.W0 = np.random.rand(len(x_in[0]), self.num_neu[0])
 			self.W0 -= (np.ones(self.W0.shape) / 2)
 			self.W0 *= 2
+			print("W0.shape", self.W0.shape)
+				
 		
 			# a0 * W0 is a batch_siz x num_neu matrix	
-			self.W1 = np.random.rand(self.num_neu, self.num_outs)
+			self.W1 = np.random.rand(self.num_neu[0], self.num_neu[1])
 			self.W1 -= (np.ones(self.W1.shape) / 2)
 			self.W1 *= 2
+			print("W1.shape", self.W1.shape)
+
+			if len(self.num_neu) > 2:
+				# a0 * W0 is a batch_siz x num_neu matrix	
+				self.W2 = np.random.rand(self.num_neu[1], self.num_neu[2])
+				self.W2 -= (np.ones(self.W2.shape) / 2)
+				self.W2 *= 2
+				print("W2.shape", self.W2.shape)
 
 		
-		
+
 		# From inpput to hidden layer
 		self.Z1 = self.A0 * self.W0
 		self.A1 = self.ReLU(self.Z1)
 
-		# From hidden layer to output
 		self.Z2 = self.A1 * self.W1
-		self.A2 = self.act_func(self.Z2) #gives yhat
-		return self.A2 #gives yhat
+
+		if len(self.num_neu) is 2:
+			# From hidden layer to output
+			self.A2 = self.act_func(self.Z2) #gives yhat
+
+			return self.A2 #gives yhat
+		else:
+			# From 1st hidden layer to 2nd hidden layer
+			self.A2 = self.ReLU(self.Z2)
 		
+			self.Z3 = np.dot(self.A2, self.W2)
+			self.A3 = self.act_func(self.Z3) #gives yhat
+
+			assert(self.A3.shape == (batch_siz, self.num_neu[2]))
+			return self.A3		
 
 	def ReLU(self, mat):
 		newmat = mat
@@ -84,7 +105,7 @@ class NeuralNetwork1:
 	
 	def softmax(self, mat):
 		rows, cols = mat.shape
-		yhat = np.zeros(self.A2.shape)
+		yhat = np.zeros(mat.shape)
 		for m in range(rows):
 			# Find the alpha
 			alpha = None
@@ -151,55 +172,35 @@ class NeuralNetwork1:
 
 	def assertValsSet(self):
 		assert(self.num_neu is not None)
-		assert(self.num_outs is not None)
 	
 	def backward(self, y_exp, yhat):
-		
-		#delta3 = np.multiply(-(y_exp - yhat), self.deact_func(self.Z2, self.A2))
-		delta3 = yhat - y
-		# delta3 = np.multiply(yhat - y_exp
-		djdw1 = np.dot(self.A1.T, delta3)
-		# print(djdw2.shape) # Esta bien!
-	
-		# djdw0 = djdw * self.W1.T * self.ReLUprime(self.Z1)
-		delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
-		djdw0 = np.dot(self.A0.T, delta2)
-		
-		# print(djdw0.shape)
-		# print(self.W0.shape)
 
 		scalar = 0.05
+
+		# Get the changes needed for each weight matrix
+		if len(self.num_neu) is 2:
+			delta3 = yhat - y_exp
+			djdw1 = np.dot(self.A1.T, delta3)
+
+			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
+			djdw0 = np.dot(self.A0.T, delta2)
+
+
+		elif len(self.num_neu) is 3:
+			delta4 = yhat - y_exp
+			djdw2 = np.dot(self.A2.T, delta4)
+
+			delta3 = np.multiply(np.dot(delta4, self.W2.T), self.ReLUprime(self.Z2))
+			djdw1 = np.dot(self.A1.T, delta3)
+
+			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
+			djdw0 = np.dot(self.A0.T, delta2)
+
 		self.W0 = self.W0 - scalar * djdw0 / np.max(np.fabs(djdw0))
-		# max_val = np.max(self.W0)
-		# min_abs_val = np.fabs(np.min(self.W0))
-		# self.W0 /= max(max_val, min_abs_val)
-		# max_val = np.max(djdw0)
-		# min_abs_val = np.fabs(np.min(djdw0))
-		#self.W0 = self.W0 - scalar * djdw0 / max(max_val, min_abs_val)
-
-
 		self.W1 = self.W1 - scalar * djdw1 / np.max(np.fabs(djdw1))
-		# max_val = np.max(self.W1)
-		# max_val = np.max(np.fabs(self.W1))
-		# self.W1 /= max(max_val, min_abs_val)
-		# max_val = np.max(djdw1)
-		# min_abs_val = np.fabs(np.min(djdw1))
-		# self.W1 = self.W1 - scalar * djdw1 / max(max_val, min_abs_val)
 
-
-		
-	def loss(self, y, yhat):
-		diff = y - yhat
-		rows, cols = diff.shape
-		newMat = np.multiply(diff,diff)
-		addage = []
-		for m in range(rows):
-			rowSum = 0
-			for n in range(cols):
-				rowSum += newMat[m,n]
-			addage.append(rowSum)
-		# print(sum(addage) / rows)
-		return 0.5 * sum(addage) / rows
+		if len(self.num_neu) is 3:
+			self.W2 = self.W2 - scalar * djdw2 / np.max(np.fabs(djdw2))
 	
 	def dispWeights(self):
 		print("W0:")
@@ -212,26 +213,34 @@ class NeuralNetwork1:
 		print(self.W0.tolist())
 		
 
-
+tours = 40
 batch_siz = 50
-num_neu = 300
-num_outs = 10
-nn = NeuralNetwork1(num_neu=num_neu, num_outs=num_outs, act_func="softmax")
+num_neurons = [300, 100, 10]
+nn = NeuralNetwork(num_neu=num_neurons, act_func="softmax")
 
+plot_x = []
+plot_y = []
 
-# The main training loop.
-for tour in range(20):
+# The main loop.
+for tour in range(tours):
+	######################################################
+	# This is where the testing begins. We just throw all
+	# the test data at it at once in one big matrix using
+	# the function forward().
+	######################################################
 	
-	# setup corresponding expected output.
-	#test_batch_siz = 100
-	x_test_in = X_test#[0:test_batch_siz]
-	y = np.zeros((x_test_in.shape[0], num_outs))
+	# construct the batch
+	x_test_in = X_test
+	y = np.zeros((x_test_in.shape[0], num_neurons[-1]))
 	for n in range(x_test_in.shape[0]):
 		y[n,y_test[n]] = 1
 
 
 	yhat = nn.forward(x_test_in)
 
+	# Change yhat from matrix output to a list of values
+	# just like how the y_test is formatted. Put yhat 
+	# into outage list.
 	outage = []
 	rows, cols = yhat.shape
 	for r in range(rows):
@@ -243,50 +252,53 @@ for tour in range(20):
 				max_idx = c
 		outage.append(max_idx)
 
-	num_wrong = 0
+	# Compare outage to y_test, get percent accuracy
+	num_right = 0
 	for idx in range(len(outage)):
 		#print(y_test[idx], outage[idx])
-		if y_test[idx] != outage[idx]:
-			num_wrong += 1
-	acc = num_wrong / len(outage)
+		if y_test[idx] == outage[idx]:
+			num_right += 1
+	acc = num_right / len(outage)
 	
-	print(acc, "incorrect.")
-	plt.plot(tour, acc * 100, "ro")
+	
+	print(acc, "correct.")
 
-	iter_nums = []
-	errs = []
+	# Plot how good the accuracy is for this tour
+	plot_x.append(tour)
+	plot_y.append(acc)
+
+	##########################################################
+	# This is where the training begins. We use forward() as
+	# before, but we also use backward() to change the weights
+	# and train the neural network.
+	##########################################################
+
 	for iters in range(100): # train it for some iterations
-		# choose indices, make input.
+
+		# Get random indicies from X_train so we can have a new random batch.
+		# we call the new random batch x_in
 		idxs = [ random.randint(0, len(X_train) - 1) for i in range(batch_siz) ]
 		x_in = [ X_train[n] for n in idxs ]
 
-		# setup corresponding expected output.
-		y = np.zeros((batch_siz, num_outs))
+		# setup corresponding expected output from y_train and call it y
+		y = np.zeros((batch_siz, num_neurons[-1]))
 		for n in range(len(idxs)):
 			y[n,y_train[idxs[n]]] = 1
 	
-
 		yhat = nn.forward(x_in)
 
-		costMat = nn.cost_func(yhat, y)
-		cost = 0
-		for m in range(costMat.shape[0]):
-			cost += costMat[m,0]
-		cost /= costMat.shape[0]
-		iter_nums.append(iters)
-		errs.append(cost)
+		assert(y.shape == yhat.shape)
+
+		# Apply changes to the weights via gradient descent
 		nn.backward(y, yhat)
 
-	#print("Training iteration.")
 
-
-
+plt.plot(plot_y)
+plt.title('MNIST training with ' + str(len(num_neurons) - 1) + ' hidden layers'  , fontsize=20)
+plt.xlabel('Iteration')
+plt.ylabel('Proportion correct')
+plt.xticks(np.arange(min(plot_x), max(plot_x)+1, 1.0))
 plt.show()
 
-#print(np.array(outage))	
-#print(y_test[0:test_batch_siz])
-
-
-#error = nn.loss(yhat)
 
 	
