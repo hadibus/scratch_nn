@@ -14,6 +14,7 @@ class NeuralNetwork:
 			self.deact_func = self.etothex # its own derivative
 		elif act_func is "sigmoid":
 			self.act_func = self.sigmoid
+			self.deact_func = self.sigmoidprime
 
 	def forward(self, x_in):
 		self.assertValsSet()
@@ -122,19 +123,11 @@ class NeuralNetwork:
 			newMat[m,0] = -sum(vals)
 		return newMat
 	
-
-	# TODO: finish this. contents are the softmax
 	def sigmoid(self, mat):
-		'''
-		rows, cols = mat.shape
-		yhat = np.zeros(self.A2.shape)
-		for m in range(rows):
-			for n in range(cols):
-				yhat[m,n] = 1 + np.exp(-1 * mat[m,n]
-				yhat[m,n] = 1 / yhat[m,n]
-		return yhat
-		'''
-		pass
+		return 1 / (1 + np.exp(-mat))
+
+	def sigmoidprime(self, mat):
+		return np.exp(-mat) / ((1 + np.exp(-mat)) **2)
 
 	def etothex(self, mat):
 		rows, cols = mat.shape

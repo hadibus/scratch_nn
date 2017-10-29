@@ -14,12 +14,14 @@ y_test = mnist.test.labels.astype("int")
 print("X_train.shape=",X_train.shape," y_train.shape=",y_train.shape)
 print("X_test.shape=",X_test.shape," y_test.shape=",y_test.shape)
 
-# plot one of these
-print("X_train len:", len(X_train))		
-
 tours = 4
 batch_siz = 50
-num_neurons = [300, 100, 10]
+# number of neurons in layers. last is output layer size.
+# number of neurons in the input layer is decided on the
+# first call of forward()
+num_neurons = [300,
+			   100, # Comment this line out to run with one hidden layer.
+			   10]
 nn = NN.NeuralNetwork(num_neu=num_neurons, act_func="softmax")
 
 plot_x = []
@@ -98,10 +100,12 @@ for tour in range(tours):
 
 
 plt.plot(plot_y)
-plt.title('MNIST training with ' + str(len(num_neurons) - 1) + ' hidden layers'  , fontsize=20)
+titleStr = 'MNIST training with ' + str(len(num_neurons) - 1) + ' hidden layer'
+if len(num_neurons) > 2:
+	titleStr += 's'
+plt.title(titleStr , fontsize=20)
 plt.xlabel('Iteration')
 plt.ylabel('Proportion correct')
-plt.xticks(np.arange(min(plot_x), max(plot_x)+1, 1.0))
 plt.show()
 
 
