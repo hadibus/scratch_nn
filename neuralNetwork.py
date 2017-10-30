@@ -4,10 +4,11 @@ import math
 import numpy as np
 
 class NeuralNetwork:
-	def __init__(self, num_neu=[0,0], act_func="softmax", momentum = 0.0):
+	def __init__(self, num_neu=[0,0], act_func="softmax", momentum = 0.0, learn_rate = 0.05):
 		self.num_neu = num_neu
 		self.beta = momentum
 		self.has_run = False
+		self.learn_rate = learn_rate
 		if act_func is "softmax":
 			self.act_func = self.softmax
 			self.deact_func = self.softmaxprime
@@ -157,8 +158,6 @@ class NeuralNetwork:
 	
 	def backward(self, y_exp, yhat):
 
-		scalar = 0.05
-
 		# Get the changes needed for each weight matrix
 		if len(self.num_neu) is 2:
 			delta3 = yhat - y_exp
@@ -181,17 +180,17 @@ class NeuralNetwork:
 		# Don't do any change to the weights if there is no change to be made.
 		# Shortstop
 		if np.max(np.fabs(djdw0)) > 0:
-			djdw0 = scalar * djdw0 / np.max(np.fabs(djdw0)) + self.djdw0_prev
+			djdw0 = self.learn_rate * djdw0 / np.max(np.fabs(djdw0)) + self.djdw0_prev
 			self.W0 = self.W0 - djdw0 
 			self.djdw0_prev = djdw0 * self.beta
 		if np.max(np.fabs(djdw1)) > 0:
-			djdw1 = scalar * djdw1 / np.max(np.fabs(djdw1)) + self.djdw1_prev
+			djdw1 = self.learn_rate * djdw1 / np.max(np.fabs(djdw1)) + self.djdw1_prev
 			self.W1 = self.W1 - djdw1 
 			self.djdw1_prev = djdw1 * self.beta
 
 		if len(self.num_neu) is 3:
 			if np.max(np.fabs(djdw1)) > 0:
-				djdw2 = scalar * djdw2 / np.max(np.fabs(djdw2)) - self.djdw2_prev
+				djdw2 = self.learn_rate * djdw2 / np.max(np.fabs(djdw2)) - self.djdw2_prev
 				self.W2 = self.W2 - djdw2 
 				self.djdw2_prev = djdw2 * self.beta
 

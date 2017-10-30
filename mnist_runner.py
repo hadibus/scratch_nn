@@ -25,9 +25,9 @@ num_neurons = [300,
 			   # 100, # Comment this line out to run with one hidden layer.
 			   10]
 beta = 0.8
-nn = NN.NeuralNetwork(num_neu=num_neurons, act_func="softmax", momentum = beta)
+learn_rate = 0.05
+nn = NN.NeuralNetwork(num_neu=num_neurons, act_func="softmax", momentum = beta, learn_rate = learn_rate)
 
-plot_x = []
 plot_y = []
 
 # The main loop.
@@ -73,7 +73,6 @@ for tour in range(tours):
 	print(acc, "correct.")
 
 	# Plot how good the accuracy is for this tour
-	plot_x.append(tour)
 	plot_y.append(acc)
 
 	##########################################################
