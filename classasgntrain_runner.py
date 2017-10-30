@@ -49,19 +49,16 @@ for i in range(num_4_test):
 X_train = X
 Y_train = Y
 
-# Convert listy stuff to matrices
-'''
-X_test = np.matrix(X_test)
-Y_test = np.matrix(Y_test)
-X_train = np.matrix(X_train)
-Y_train = np.matrix(Y_train)
-'''
-
 epochs = 100
 num_neurons = [5, # Hidden layer neurons
+			   10,
 			   1] # Output layer neurons
 
 nn = NN.NeuralNetwork(num_neu = num_neurons, act_func = 'sigmoid')
+
+nn.forward(X_test[0:2])
+
+print(nn.getWeights())
 
 for epoch in range(epochs):
 
@@ -69,9 +66,7 @@ for epoch in range(epochs):
 	# Test how well the neural network does
 	########################################
 
-	print('X_test', X_test)
 	yhat = nn.forward(X_test)
-	print('yhat', yhat)
 
 	acc = 0
 	for i in range(len(Y_test)):
@@ -89,11 +84,9 @@ for epoch in range(epochs):
 	#######################################
 	for i in range(len(X_train)):
 		yhat = nn.forward(X_train[i])
-		#print('Y_train[i]', np.matrix(Y_train[i]))
-		#print('yhat', yhat)
-		#assert(False)
+		# Y_train is made a matrix
 		nn.backward(np.matrix(Y_train[i]), yhat)
-		
+
 
 
 

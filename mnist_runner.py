@@ -16,15 +16,16 @@ y_test = mnist.test.labels.astype("int")
 print("X_train.shape=",X_train.shape," y_train.shape=",y_train.shape)
 print("X_test.shape=",X_test.shape," y_test.shape=",y_test.shape)
 
-tours = 4
-batch_siz = 50
+tours = 20
+batch_siz = 100
 # number of neurons in layers. last is output layer size.
 # number of neurons in the input layer is decided on the
 # first call of forward()
 num_neurons = [300,
-			   100, # Comment this line out to run with one hidden layer.
+			   # 100, # Comment this line out to run with one hidden layer.
 			   10]
-nn = NN.NeuralNetwork(num_neu=num_neurons, act_func="softmax")
+beta = 0.8
+nn = NN.NeuralNetwork(num_neu=num_neurons, act_func="softmax", momentum = beta)
 
 plot_x = []
 plot_y = []
@@ -81,7 +82,7 @@ for tour in range(tours):
 	# and train the neural network.
 	##########################################################
 
-	for iters in range(100): # train it for some iterations
+	for iters in range(50): # train it for some iterations
 
 		# Get random indicies from X_train so we can have a new random batch.
 		# we call the new random batch x_in
@@ -105,7 +106,9 @@ plt.plot(plot_y)
 titleStr = 'MNIST training with ' + str(len(num_neurons) - 1) + ' hidden layer'
 if len(num_neurons) > 2:
 	titleStr += 's'
-plt.title(titleStr , fontsize=20)
+if beta != 0.0:
+	titleStr += ' and momentum'
+plt.title(titleStr)
 plt.xlabel('Iteration')
 plt.ylabel('Proportion correct')
 plt.show()

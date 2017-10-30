@@ -4,8 +4,9 @@ import math
 import numpy as np
 
 class NeuralNetwork:
-	def __init__(self, num_neu=[0,0], act_func="softmax"):
+	def __init__(self, num_neu=[0,0], act_func="softmax", momentum = 0.0):
 		self.num_neu = num_neu
+		self.beta = momentum
 		self.has_run = False
 		if act_func is "softmax":
 			self.act_func = self.softmax
@@ -37,18 +38,24 @@ class NeuralNetwork:
 			self.W0 = np.random.rand(len(x_in[0]), self.num_neu[0])
 			self.W0 -= (np.ones(self.W0.shape) / 2)
 			self.W0 *= 2
+			# init previous change for momentum
+			self.djdw0_prev = 0
 				
 		
 			# a0 * W0 is a batch_siz x num_neu matrix	
 			self.W1 = np.random.rand(self.num_neu[0], self.num_neu[1])
 			self.W1 -= (np.ones(self.W1.shape) / 2)
 			self.W1 *= 2
+			# init previous change for momentum
+			self.djdw1_prev = 0
 
 			if len(self.num_neu) > 2:
 				# a0 * W0 is a batch_siz x num_neu matrix	
 				self.W2 = np.random.rand(self.num_neu[1], self.num_neu[2])
 				self.W2 -= (np.ones(self.W2.shape) / 2)
 				self.W2 *= 2
+				# init previous change for momentum
+				self.djdw2_prev = 0
 
 		
 
@@ -70,7 +77,7 @@ class NeuralNetwork:
 			self.Z3 = np.dot(self.A2, self.W2)
 			self.A3 = self.act_func(self.Z3) #gives yhat
 
-			assert(self.A3.shape == (batch_siz, self.num_neu[2]))
+			#assert(self.A3.shape == (batch_siz, self.num_neu[2]))
 			return self.A3		
 
 	def ReLU(self, mat):
@@ -171,9 +178,28 @@ class NeuralNetwork:
 			delta2 = np.multiply(np.dot(delta3, self.W1.T), self.ReLUprime(self.Z1))
 			djdw0 = np.dot(self.A0.T, delta2)
 
-		self.W0 = self.W0 - scalar * djdw0 / np.max(np.fabs(djdw0))
-		self.W1 = self.W1 - scalar * djdw1 / np.max(np.fabs(djdw1))
+		# Don't do any change to the weights if there is no change to be made.
+		# Shortstop
+		if np.max(np.fabs(djdw0)) > 0:
+			djdw0 = scalar * djdw0 / np.max(np.fabs(djdw0)) + self.djdw0_prev
+			self.W0 = self.W0 - djdw0 
+			self.djdw0_prev = djdw0 * self.beta
+		if np.max(np.fabs(djdw1)) > 0:
+			djdw1 = scalar * djdw1 / np.max(np.fabs(djdw1)) + self.djdw1_prev
+			self.W1 = self.W1 - djdw1 
+			self.djdw1_prev = djdw1 * self.beta
 
 		if len(self.num_neu) is 3:
-			self.W2 = self.W2 - scalar * djdw2 / np.max(np.fabs(djdw2))
-	
+			if np.max(np.fabs(djdw1)) > 0:
+				djdw2 = scalar * djdw2 / np.max(np.fabs(djdw2)) - self.djdw2_prev
+				self.W2 = self.W2 - djdw2 
+				self.djdw2_prev = djdw2 * self.beta
+
+	def	getWeights(self):
+		ret = 'W0: ' + str(self.W0.shape) + '\n'
+		ret += 'W1: ' + str(self.W1.shape) + '\n'
+		if len(self.num_neu) > 2:
+			ret += 'W2: ' + str(self.W2.shape) + '\n'
+		return ret
+
+
