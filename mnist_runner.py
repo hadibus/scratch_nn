@@ -1,3 +1,5 @@
+# file mnist_runner.py
+
 from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
 import numpy as np
