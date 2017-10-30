@@ -22,10 +22,10 @@ batch_siz = 100
 # number of neurons in the input layer is decided on the
 # first call of forward()
 num_neurons = [300,
-			   # 100, # Comment this line out to run with one hidden layer.
+			   100, # Comment this line out to run with one hidden layer.
 			   10]
 beta = 0.8
-learn_rate = 0.05
+learn_rate = 0.005
 nn = NN.NeuralNetwork(num_neu=num_neurons, act_func="softmax", momentum = beta, learn_rate = learn_rate)
 
 plot_y = []

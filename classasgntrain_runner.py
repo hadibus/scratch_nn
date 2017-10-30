@@ -54,12 +54,15 @@ num_neurons = [5, # Hidden layer neurons
 			   10,
 			   1] # Output layer neurons
 
-nn = NN.NeuralNetwork(num_neu = num_neurons, act_func = 'sigmoid')
+beta = 0.8
+learn_rate = 1
+nn = NN.NeuralNetwork(num_neu = num_neurons, act_func = 'sigmoid', momentum = beta, learn_rate=learn_rate)
 
 nn.forward(X_test[0:2])
 
 print(nn.getWeights())
 
+accuracies = []
 for epoch in range(epochs):
 
 	########################################
@@ -76,6 +79,8 @@ for epoch in range(epochs):
 
 	print(acc, 'correct.')
 
+	accuracies.append(acc)
+
 
 
 	#######################################
@@ -87,7 +92,15 @@ for epoch in range(epochs):
 		# Y_train is made a matrix
 		nn.backward(np.matrix(Y_train[i]), yhat)
 
-
-
+plt.plot(accuracies)
+titleStr = 'Two-class training with ' + str(len(num_neurons) - 1) + ' hidden layer'
+if len(num_neurons) > 2:
+	titleStr += 's'
+if beta != 0.0:
+	titleStr += ' and momentum'
+plt.title(titleStr)
+plt.xlabel('Iteration')
+plt.ylabel('Proportion correct')
+plt.show()
 
 
